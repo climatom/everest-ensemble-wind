@@ -54,13 +54,23 @@ def load_dataset(file_id: str) -> xr.Dataset:
 
 
 def get_valid_time(ds: xr.Dataset) -> pd.DatetimeIndex:
-    if "valid_time" in ds:
-        t = pd.to_datetime(ds["valid_time"].values)
-    else:
-        init = pd.to_datetime(ds.attrs["init_time"])
-        t = init + pd.to_timedelta(ds["fxx"].values, unit="h")
+    """
+    Return forecast valid times in Nepal time.
 
-    return pd.DatetimeIndex(t) + pd.Timedelta(hours=5, minutes=45)
+    Prefer fxx + init_time because it is robust across GEFS/ECMWF and avoids
+    pandas issues when valid_time is scalar or awkwardly encoded.
+    """
+    if "fxx" in ds.coords and "init_time" in ds.attrs:
+        init = pd.to_datetime(ds.attrs["init_time"])
+        fxx = np.asarray(ds["fxx"].values, dtype=float)
+        t = init + pd.to_timedelta(fxx, unit="h")
+    elif "valid_time" in ds:
+        t = np.asarray(ds["valid_time"].values).squeeze()
+        t = pd.to_datetime(t)
+    else:
+        raise ValueError("Could not determine forecast valid times.")
+
+    return pd.DatetimeIndex(np.asarray(t).ravel()) + pd.Timedelta(hours=5, minutes=45)
 
 
 def ensemble_summary(ds: xr.Dataset, model_name: str) -> pd.DataFrame:
