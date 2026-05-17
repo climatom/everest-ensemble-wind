@@ -15,8 +15,8 @@ import xarray as xr
 # Google Drive file IDs
 # Replace these with your actual IDs
 # =========================
-GEFS_FILE_ID = "PASTE_GEFS_FILE_ID_HERE"
-ECMWF_FILE_ID = "PASTE_ECMWF_FILE_ID_HERE"
+GEFS_FILE_ID = "1kaJoW7CLXIzwfB75eQh3Y6tkPW3z3xnA"
+ECMWF_FILE_ID = "1zp-ycSNN3Shk4oGLfAE4eRTCUm29zMoP"
 
 
 MPS_TO_KT = 1.94384449
