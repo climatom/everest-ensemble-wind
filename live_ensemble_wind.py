@@ -92,6 +92,7 @@ def load_appstate_gefs_summary(file_id: str) -> pd.DataFrame:
 
     return pd.DataFrame(
         {
+            "time_utc": df["time_utc"],
             "time_npt": df["time_npt"],
             "median": df["summit_wspd_ms_median"],
             "p10": df["summit_wspd_ms_p10"],
@@ -125,6 +126,12 @@ def get_valid_time(ds: xr.Dataset) -> pd.DatetimeIndex:
 
 def init_string(ds: xr.Dataset) -> str:
     return str(ds.attrs.get("init_time", "unknown"))
+
+
+def appstate_init_string(df: pd.DataFrame) -> str:
+    if "time_utc" in df and len(df) > 0:
+        return pd.to_datetime(df["time_utc"].iloc[0]).strftime("%Y-%m-%d %H:%M")
+    return "unknown"
 
 
 # =========================
@@ -183,14 +190,13 @@ def plot_wind(df_gefs: pd.DataFrame, df_ecmwf: pd.DataFrame, units: str):
 
     fig, ax = plt.subplots(figsize=(13, 6))
 
-    for df, label in [(df_gefs, df_gefs["model"].iloc[0]), (df_ecmwf, df_ecmwf["model"].iloc[0])]:
+    for df, label in [
+        (df_gefs, df_gefs["model"].iloc[0]),
+        (df_ecmwf, df_ecmwf["model"].iloc[0]),
+    ]:
         x = df["time_npt"]
 
-        ax.plot(
-            x,
-            df["median"] * factor,
-            label=f"{label} median",
-        )
+        ax.plot(x, df["median"] * factor, label=f"{label} median")
 
         ax.fill_between(
             x,
@@ -292,11 +298,7 @@ def plot_vo2_ensemble(df: pd.DataFrame):
 def plot_vo2_met(df: pd.DataFrame):
     fig, ax = plt.subplots(figsize=(13, 5))
 
-    ax.plot(
-        df["time_npt"],
-        df["summit_t_C_median"],
-        label="Temperature median",
-    )
+    ax.plot(df["time_npt"], df["summit_t_C_median"], label="Temperature median")
 
     ax.fill_between(
         df["time_npt"],
@@ -367,7 +369,7 @@ with st.spinner("Loading ensemble wind forecast data..."):
 
         df_ecmwf = ensemble_summary(ds_ecmwf, "ECMWF ENS summit")
 
-        gefs_init = "from AppState summary CSV"
+        gefs_init = appstate_init_string(df_gefs)
         ecmwf_init = init_string(ds_ecmwf)
 
         show_exceedance = False
@@ -376,11 +378,12 @@ with st.spinner("Loading ensemble wind forecast data..."):
 # =========================
 # Metadata
 # =========================
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4 = st.columns(4)
 
 col1.metric("GEFS product", df_gefs["model"].iloc[0])
-col2.metric("ECMWF init", ecmwf_init + " UTC")
-col3.metric("Displayed time", "Nepal time")
+col2.metric("GEFS init/first valid", gefs_init + " UTC")
+col3.metric("ECMWF init", ecmwf_init + " UTC")
+col4.metric("Displayed time", "Nepal time")
 
 
 # =========================
